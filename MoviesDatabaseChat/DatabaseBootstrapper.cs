@@ -208,7 +208,7 @@ namespace MoviesDatabaseChat
         {
             log("Creating Ai Agent");
 
-            var conn = CreateAiConnectionString("gpt-4o", AiModelType.Chat);
+            var conn = CreateAiConnectionString();
             await store.Maintenance.SendAsync(new PutConnectionStringOperation<AiConnectionString>(conn));
 
             var systemPrompt =
@@ -707,15 +707,15 @@ namespace MoviesDatabaseChat
 
             log($"Ai Agent created, with {queryTools.Count} query tools and {actionTools.Count} action tools");
 
-            AiConnectionString CreateAiConnectionString(string model, AiModelType modelType)
+            AiConnectionString CreateAiConnectionString()
             {
                 var apiKey = Environment.GetEnvironmentVariable("RAVEN_AI_INTEGRATION_OPENAI_API_KEY");
                 return new AiConnectionString
                 {
                     Name = "Agent_ConnectionString",
                     Identifier = Guid.NewGuid().ToString(),
-                    ModelType = modelType,
-                    OpenAiSettings = new OpenAiSettings(apiKey, "https://api.openai.com/", model)
+                    ModelType = AiModelType.Chat,
+                    OpenAiSettings = new OpenAiSettings(apiKey, "https://api.openai.com/", "gpt-5-mini", reasoningEffort: OpenAiReasoningEffort.Minimal, seed: 48)
                 };
             }
         }

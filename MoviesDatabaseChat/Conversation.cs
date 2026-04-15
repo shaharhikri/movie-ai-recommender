@@ -28,14 +28,43 @@ namespace MoviesDatabaseChat
         {
             _chat.SetUserPrompt(prompt);
             var agentResult = await _chat.RunAsync<MoviesSampleObject>(CancellationToken.None);
-
-            while (agentResult.Status == AiConversationResult.ActionRequired)
-            {
-                agentResult = await _chat.RunAsync<MoviesSampleObject>(CancellationToken.None);
-            }
-
             return agentResult.Answer;
         }
+
+        public async Task<MoviesSampleObject> TalkWithImagesAsync(string prompt, string[] imagePaths)
+        {
+            var streams = new List<FileStream>();
+            try
+            {
+                foreach (var imagePath in imagePaths)
+                {
+                    var stream = File.OpenRead(imagePath);
+                    streams.Add(stream);
+                    _chat.AddAttachment(Path.GetFileName(imagePath), stream, GetMimeType(imagePath));
+                }
+
+                if (!string.IsNullOrEmpty(prompt))
+                    _chat.SetUserPrompt(prompt);
+
+                var agentResult = await _chat.RunAsync<MoviesSampleObject>(CancellationToken.None);
+                return agentResult.Answer;
+            }
+            finally
+            {
+                foreach (var stream in streams)
+                    await stream.DisposeAsync();
+            }
+        }
+
+        private static string GetMimeType(string filePath) =>
+            Path.GetExtension(filePath).ToLowerInvariant() switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png"            => "image/png",
+                ".gif"            => "image/gif",
+                ".webp"           => "image/webp",
+                _                 => "image/jpeg"
+            };
 
         private static async Task<object> RateMovieAsync(IDocumentStore store, string userId, RateToolSampleRequest req)
         {
